@@ -1,6 +1,6 @@
 # SEB HackerRank Config Generator
 
-A web app for generating Safe Exam Browser (`.seb`) configuration files for HackerRank contests. The interface and Python generation endpoint are served together, so the complete app can be deployed to Vercel.
+A web app for generating Safe Exam Browser (`.seb`) configuration files for HackerRank contests.
 
 ## Features
 
@@ -22,14 +22,7 @@ flask --app app run
 
 Open <http://127.0.0.1:5000>.
 
-## Deploy to Vercel
-
-1. Push this project to a GitHub repository.
-2. In Vercel, create a project by importing that repository.
-3. Keep the project root at the directory containing `app.py` and `requirements.txt`. Vercel detects the Python app and installs its dependencies.
-4. Deploy. The generated Vercel URL serves the frontend and its `/api/generate` endpoint.
-
-The app does not store uploaded templates or passwords. Template uploads are limited to 4 MB to fit within serverless request limits. Use HTTPS when sharing the public deployment.
+The app does not store uploaded templates or passwords. Template uploads are limited to 4 MB.
 
 ## Using the web app
 
