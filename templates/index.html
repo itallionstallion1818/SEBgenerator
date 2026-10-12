@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f6fb">
+    <meta name="description" content="Create a Safe Exam Browser configuration for a HackerRank contest.">
+    <title>SEB Config Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="SEB Config Generator home">
+          <span class="brand-mark" aria-hidden="true">S</span>
+          <span>SEB Config Generator</span>
+        </a>
+        <span class="header-note"><span class="status-dot"></span> Runs securely in your session</span>
+      </header>
+
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">SAFE EXAM BROWSER</p>
+        <h1 id="page-title">Set up your next contest.</h1>
+        <p class="intro-copy">Create a ready-to-use <code>.seb</code> configuration for a HackerRank contest in a few steps.</p>
+      </section>
+
+      <form id="generator-form" class="generator-card">
+        <div class="card-heading">
+          <div>
+            <h2>Exam configuration</h2>
+            <p>Enter your contest details to generate a configuration file.</p>
+          </div>
+          <span class="step-badge">01 <span>/ 01</span></span>
+        </div>
+
+        <div class="field">
+          <label for="contest-url">HackerRank contest URL <span class="required">*</span></label>
+          <input id="contest-url" name="contest_url" type="url" placeholder="https://www.hackerrank.com/contests/your-contest" autocomplete="url" required>
+          <p class="field-hint">The page Safe Exam Browser will open when the exam starts.</p>
+        </div>
+
+        <div class="field">
+          <label for="quit-password">Quit / exit password <span class="required">*</span></label>
+          <input id="quit-password" name="quit_password" type="password" placeholder="Enter an exit password" autocomplete="new-password" required>
+          <p class="field-hint">Required to quit Safe Exam Browser. Only its SHA-256 hash is stored in the generated file.</p>
+        </div>
+
+        <div class="field">
+          <label for="output-filename">Output filename</label>
+          <div class="input-suffix">
+            <input id="output-filename" name="output_filename" type="text" value="contest.seb" maxlength="120">
+          </div>
+          <p class="field-hint">The <code>.seb</code> extension is added automatically if needed.</p>
+        </div>
+
+        <details class="advanced-options">
+          <summary>
+            <span class="summary-icon" aria-hidden="true">+</span>
+            <span><strong>Advanced options</strong><small>Template and launch password</small></span>
+            <span class="summary-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="advanced-content">
+            <div class="field">
+              <label for="template-file">Base .seb template <span class="optional">OPTIONAL</span></label>
+              <input id="template-file" name="template" type="file" accept=".seb,application/octet-stream">
+              <p class="field-hint">An unencrypted template keeps its exam settings; the URL and quit password are replaced. Maximum file size: 4 MB.</p>
+            </div>
+
+            <div class="field">
+              <label for="entry-password">SEB launch password <span class="optional">OPTIONAL</span></label>
+              <input id="entry-password" name="entry_password" type="password" placeholder="Leave blank for no launch password" autocomplete="new-password">
+              <p class="field-hint">Encrypts the configuration file. Students will need this password to open it.</p>
+            </div>
+
+            <div class="toggle-list">
+              <label class="toggle-row" for="clear-cookies">
+                <span class="toggle-copy"><strong>Clear cookies on start and end</strong><small>Start each exam with a fresh browser session.</small></span>
+                <input id="clear-cookies" name="clear_cookies" type="checkbox" value="true" checked>
+                <span class="toggle-control" aria-hidden="true"></span>
+              </label>
+              <label class="toggle-row" for="private-clipboard">
+                <span class="toggle-copy"><strong>Isolate the clipboard</strong><small>Prevent clipboard access from outside SEB.</small></span>
+                <input id="private-clipboard" name="private_clipboard" type="checkbox" value="true" checked>
+                <span class="toggle-control" aria-hidden="true"></span>
+              </label>
+              <p class="field-hint toggle-hint">These two settings apply when generating a default configuration. A template keeps its existing settings.</p>
+            </div>
+          </div>
+        </details>
+
+        <div id="form-message" class="form-message" role="status" aria-live="polite" hidden></div>
+        <button id="generate-button" class="submit-button" type="submit">
+          <span class="button-label">Generate configuration</span>
+          <span class="button-arrow" aria-hidden="true">→</span>
+        </button>
+        <p class="privacy-note"><span aria-hidden="true">◆</span> Your passwords and template are used only to create this download.</p>
+      </form>
+
+      <footer class="site-footer">Made for smoother, more secure exams.</footer>
+    </main>
+  </body>
+</html>

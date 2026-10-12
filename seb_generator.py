@@ -2,8 +2,10 @@ import argparse
 import gzip
 import hashlib
 import plistlib
+import zlib
 from pathlib import Path
 from typing import Optional
+from xml.parsers import expat
 
 
 def get_default_hackerrank_config() -> dict:
@@ -80,30 +82,38 @@ def unpack_seb_file(seb_path: Path) -> dict:
     Unpacks an existing unencrypted (.seb) file (either 'plnd' double-gzipped 
     or raw XML plist) into a Python dictionary.
     """
-    raw_bytes = seb_path.read_bytes()
+    return unpack_seb_bytes(seb_path.read_bytes())
 
-    # Check if outer layer is gzipped
-    if raw_bytes[:2] == b"\x1f\x8b":
-        outer_decompressed = gzip.decompress(raw_bytes)
-    else:
-        outer_decompressed = raw_bytes
 
-    # Check 4-byte SEB magic prefix
-    prefix = outer_decompressed[:4]
-    if prefix == b"plnd":
-        inner_compressed = outer_decompressed[4:]
-        xml_bytes = gzip.decompress(inner_compressed)
-    elif prefix in (b"pswd", b"pwcc", b"pkhs", b"phsk"):
-        raise ValueError(
-            f"Template file uses encrypted header '{prefix.decode()}'. "
-            "Save the template without an admin/settings password first."
-        )
-    elif outer_decompressed.lstrip().startswith(b"<?xml"):
-        xml_bytes = outer_decompressed
-    else:
-        raise ValueError("Unrecognized .seb file structure.")
+def unpack_seb_bytes(raw_bytes: bytes) -> dict:
+    """Unpacks an existing unencrypted SEB configuration from bytes."""
 
-    return plistlib.loads(xml_bytes)
+    try:
+        if raw_bytes[:2] == b"\x1f\x8b":
+            outer_decompressed = gzip.decompress(raw_bytes)
+        else:
+            outer_decompressed = raw_bytes
+
+        prefix = outer_decompressed[:4]
+        if prefix == b"plnd":
+            xml_bytes = gzip.decompress(outer_decompressed[4:])
+        elif prefix in (b"pswd", b"pwcc", b"pkhs", b"phsk"):
+            raise ValueError(
+                f"Template file uses encrypted header '{prefix.decode()}'. "
+                "Save the template without an admin/settings password first."
+            )
+        elif outer_decompressed.lstrip().startswith(b"<?xml"):
+            xml_bytes = outer_decompressed
+        else:
+            raise ValueError("Unrecognized .seb file structure.")
+
+        config = plistlib.loads(xml_bytes)
+    except (OSError, EOFError, zlib.error, plistlib.InvalidFileException, expat.ExpatError) as exc:
+        raise ValueError("The .seb template is invalid or corrupted.") from exc
+
+    if not isinstance(config, dict):
+        raise ValueError("The .seb template does not contain a configuration dictionary.")
+    return config
 
 
 def pack_seb_bytes(config: dict, entry_password: Optional[str] = None) -> bytes:

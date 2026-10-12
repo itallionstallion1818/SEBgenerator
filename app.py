@@ -1,78 +1,90 @@
-import streamlit as st
-from pathlib import Path
-import tempfile
+import hashlib
+import io
+from urllib.parse import urlsplit
+
+from flask import Flask, jsonify, render_template, request, send_file
+from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.utils import secure_filename
+
 from seb_generator import (
     get_default_hackerrank_config,
-    unpack_seb_file,
     pack_seb_bytes,
+    unpack_seb_bytes,
 )
-import hashlib
 
-st.set_page_config(page_title="SEB Config Generator", page_icon="🔒", layout="centered")
-st.title("🔒 HackerRank .seb Generator")
+app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 4_400_000
+app.config["TEMPLATES_AUTO_RELOAD"] = False
 
-with st.form("seb_form"):
-    contest_url = st.text_input(
-        "HackerRank Contest URL",
-        placeholder="https://www.hackerrank.com/contests/your-contest-slug",
-    )
-    quit_password = st.text_input(
-        "Quit / Exit Password",
-        type="password",
-        help="Password students/invigilators enter after pressing Ctrl+Q / Cmd+Q to close SEB.",
-    )
-    output_filename = st.text_input("Output Filename", value="contest.seb")
 
-    with st.expander("Advanced Options (Template & Launch Password)"):
-        template_file = st.file_uploader(
-            "Base .seb Template (Optional)",
-            type=["seb"],
-            help="Upload an existing unencrypted .seb file to preserve its exact rules while replacing the URL and quit password.",
-        )
-        entry_password = st.text_input(
-            "SEB Launch Password (Optional)",
-            type="password",
-            help="Encrypts the .seb file itself (requires 'pip install rncryptor'). Students must enter this password when launching the file.",
-        )
-        clear_cookies = st.checkbox("Clear cookies on start & end", value=True)
-        private_clipboard = st.checkbox("Isolate clipboard (prevent pasting from outside SEB)", value=True)
+@app.get("/")
+def index():
+    return render_template("index.html")
 
-    submitted = st.form_submit_button("Generate .seb File")
 
-if submitted:
+@app.errorhandler(RequestEntityTooLarge)
+def request_too_large(_error):
+    return jsonify(error="The upload is too large. Choose a template smaller than 4 MB."), 413
+
+
+@app.post("/api/generate")
+def generate():
+    contest_url = request.form.get("contest_url", "").strip()
+    quit_password = request.form.get("quit_password", "")
     if not contest_url or not quit_password:
-        st.error("Both the HackerRank Contest URL and Quit Password are required.")
-    else:
-        try:
-            if template_file is not None:
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".seb") as tmp:
-                    tmp.write(template_file.read())
-                    tmp_path = Path(tmp.name)
-                config = unpack_seb_file(tmp_path)
-                tmp_path.unlink(missing_ok=True)
-            else:
-                config = get_default_hackerrank_config()
-                config["examSessionClearCookiesOnStart"] = clear_cookies
-                config["examSessionClearCookiesOnEnd"] = clear_cookies
-                config["enablePrivateClipboard"] = private_clipboard
+        return jsonify(error="Both the HackerRank Contest URL and Quit Password are required."), 400
 
-            config["startURL"] = contest_url.strip()
-            config["hashedQuitPassword"] = hashlib.sha256(quit_password.encode("utf-8")).hexdigest().lower()
-            config["allowQuit"] = True
-            config["ignoreExitKeys"] = False
-            config["sebConfigPurpose"] = 0
+    try:
+        parsed_url = urlsplit(contest_url)
+    except ValueError:
+        return jsonify(error="Enter a valid URL beginning with http:// or https://."), 400
+    if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+        return jsonify(error="Enter a valid URL beginning with http:// or https://."), 400
 
-            seb_bytes = pack_seb_bytes(config, entry_password=entry_password or None)
+    output_filename = secure_filename(request.form.get("output_filename", "").strip())
+    if not output_filename:
+        output_filename = "contest.seb"
+    if not output_filename.lower().endswith(".seb"):
+        output_filename += ".seb"
 
-            if not output_filename.endswith(".seb"):
-                output_filename += ".seb"
+    template_file = request.files.get("template")
+    has_template = template_file is not None and bool(template_file.filename)
 
-            st.success(f"Generated `{output_filename}`!")
-            st.download_button(
-                label=f"⬇️ Download {output_filename}",
-                data=seb_bytes,
-                file_name=output_filename,
-                mime="application/octet-stream",
-            )
-        except Exception as e:
-            st.error(f"Failed to generate .seb file: {e}")
+    try:
+        if has_template:
+            config = unpack_seb_bytes(template_file.read())
+        else:
+            config = get_default_hackerrank_config()
+            clear_cookies = request.form.get("clear_cookies") == "true"
+            config["examSessionClearCookiesOnStart"] = clear_cookies
+            config["examSessionClearCookiesOnEnd"] = clear_cookies
+            config["enablePrivateClipboard"] = request.form.get("private_clipboard") == "true"
+
+        config["startURL"] = contest_url
+        config["hashedQuitPassword"] = hashlib.sha256(
+            quit_password.encode("utf-8")
+        ).hexdigest().lower()
+        config["allowQuit"] = True
+        config["ignoreExitKeys"] = False
+        config["sebConfigPurpose"] = 0
+
+        seb_bytes = pack_seb_bytes(
+            config,
+            entry_password=request.form.get("entry_password") or None,
+        )
+    except (ValueError, ImportError) as error:
+        return jsonify(error=str(error)), 400
+    except Exception:
+        app.logger.exception("Failed to generate SEB configuration")
+        return jsonify(error="The configuration could not be generated. Check the template and try again."), 500
+
+    return send_file(
+        io.BytesIO(seb_bytes),
+        mimetype="application/octet-stream",
+        as_attachment=True,
+        download_name=output_filename,
+    )
+
+
+if __name__ == "__main__":
+    app.run()

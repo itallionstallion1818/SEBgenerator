@@ -1,64 +1,46 @@
 # SEB HackerRank Config Generator
 
-A small Streamlit app for generating Safe Exam Browser (.seb) configuration files tailored for HackerRank contests. It lets you set a contest URL, define a quit/exit password, optionally reuse an existing .seb template, and export a ready-to-use .seb file.
+A web app for generating Safe Exam Browser (`.seb`) configuration files for HackerRank contests. The interface and Python generation endpoint are served together, so the complete app can be deployed to Vercel.
 
 ## Features
 
 - Generates a HackerRank-focused SEB config from a contest URL
-- Supports a custom quit/exit password that is hashed in the final SEB file
-- Lets you reuse an existing unencrypted .seb template and override only key values
-- Supports optional launch password encryption for the .seb file
-- Includes settings for cookie clearing, private clipboard isolation, and lockdown defaults
-- Can also be used from the command line via `seb_generator.py`
+- Hashes the quit/exit password with SHA-256
+- Accepts an optional unencrypted `.seb` template and preserves its exam settings
+- Optionally encrypts the generated file with a launch password
+- Supports cookie clearing and private clipboard settings for default configs
+- Includes a command-line interface
 
-## Project Files
-
-- `app.py` — Streamlit web app UI
-- `seb_generator.py` — SEB config generation and packaging logic
-
-## Requirements
+## Run locally
 
 Python 3.9+ is recommended.
 
-Install the required packages:
-
 ```bash
-pip install streamlit
+pip install -r requirements.txt
+flask --app app run
 ```
 
-Optional for encrypted launch passwords:
+Open <http://127.0.0.1:5000>.
 
-```bash
-pip install rncryptor
-```
+## Deploy to Vercel
 
-## Run the Streamlit App
+1. Push this project to a GitHub repository.
+2. In Vercel, create a project by importing that repository.
+3. Keep the project root at the directory containing `app.py` and `requirements.txt`. Vercel detects the Python app and installs its dependencies.
+4. Deploy. The generated Vercel URL serves the frontend and its `/api/generate` endpoint.
 
-From the project directory:
+The app does not store uploaded templates or passwords. Template uploads are limited to 4 MB to fit within serverless request limits. Use HTTPS when sharing the public deployment.
 
-```bash
-streamlit run app.py
-```
+## Using the web app
 
-Then open the local URL shown in the terminal, usually:
+1. Enter the HackerRank contest URL and a quit/exit password.
+2. Choose an output filename.
+3. Optionally open **Advanced options** to upload an unencrypted base `.seb` template or set a launch password.
+4. Generate and download the configuration.
 
-```text
-http://localhost:8501
-```
+The cookie and clipboard options apply to a generated default config. When a template is uploaded, its existing settings are preserved while the contest URL and quit password are replaced.
 
-## Using the App
-
-1. Enter the HackerRank contest URL.
-2. Enter a quit/exit password that students or invigilators must use to close SEB.
-3. Choose an output filename such as `contest.seb`.
-4. Optionally upload a base `.seb` template to preserve custom exam settings.
-5. Optionally set a launch password to encrypt the `.seb` file.
-6. Click "Generate .seb File".
-7. Download the generated file.
-
-## Command-Line Usage
-
-You can also generate a `.seb` file without the UI:
+## Command-line usage
 
 ```bash
 python seb_generator.py --url "https://www.hackerrank.com/contests/your-contest-slug" --quit-pass "your-exit-password" --out contest.seb
@@ -78,9 +60,5 @@ python seb_generator.py \
 ## Notes
 
 - Template files must be unencrypted before being uploaded or used as a base config.
-- The quit password is stored as a SHA-256 hash in the generated SEB file, as required by SEB.
-- If you use a launch password, students must enter it when opening the generated file.
-
-## License
-
-This project is intended for internal or educational use. Add your preferred license if you plan to distribute it publicly.
+- The quit password is stored as a SHA-256 hash in the generated SEB file.
+- If you set a launch password, students must enter it when opening the file.
