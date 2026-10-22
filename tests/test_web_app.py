@@ -120,6 +120,32 @@ class GeneratorWebAppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(gzip.decompress(response.data)[:4], b"pswd")
 
+    def test_hackerrank_freeze_prevention_settings(self):
+        response = self.client.post(
+            "/api/generate",
+            data={
+                "contest_url": "https://www.hackerrank.com/contests/sample",
+                "quit_password": "exit-secret",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        config = unpack_seb_bytes(response.data)
+
+        # Ensure links open in same window to avoid frozen/unfocused background windows
+        self.assertEqual(config["newBrowserWindowByLinkPolicy"], 1)
+        self.assertEqual(config["newBrowserWindowByScriptPolicy"], 1)
+
+        # Ensure Browser Exam Key request hashing is disabled (prevents network stall on HackerRank SPA)
+        self.assertFalse(config["sendBrowserExamKey"])
+        self.assertFalse(config["browserURLSalt"])
+
+        # Ensure Esc key is allowed so Monaco editor autocompletion does not trap focus
+        self.assertTrue(config["enableEsc"])
+
+        # Ensure camera and microphone access are permitted for proctoring without hanging
+        self.assertTrue(config["allowVideoCapture"])
+        self.assertTrue(config["allowAudioCapture"])
+
 
 if __name__ == "__main__":
     unittest.main()

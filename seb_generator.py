@@ -36,11 +36,16 @@ def get_default_hackerrank_config() -> dict:
         "showTaskBar": True,
         "taskBarHeight": 40,
         "showReloadButton": True,
+        "browserWindowAllowReload": True,
+        "showReloadWarning": False,  # Avoid modal warning dialogs appearing behind fullscreen window
         "showTime": True,
         "showInputLanguage": True,
         "allowBrowsingBackForward": True,  # Needed to navigate between contest problems
-        "newBrowserWindowByLinkPolicy": 2,  # 2 = Open in same window
-        "newBrowserWindowByScriptPolicy": 2,
+        # 0 = Block, 1 = Open in same window, 2 = Open in new window.
+        # MUST be 1 so links with target="_blank" open in the same window instead of
+        # spawning invisible/unfocused windows in fullscreen mode that freeze the session.
+        "newBrowserWindowByLinkPolicy": 1,
+        "newBrowserWindowByScriptPolicy": 1,
         
         # Security & Anti-Cheat Restrictions
         "allowSwitchToApplications": False,
@@ -57,7 +62,8 @@ def get_default_hackerrank_config() -> dict:
         "allowVirtualMachine": False,
         "enableRightMouse": False,
         "enableAltMouseWheel": False,
-        "enableEsc": False,
+        # Allow Esc key: Monaco/Ace editor requires Esc to close autocomplete and hover dialogs without trapping focus
+        "enableEsc": True,
         "enableCtrlEsc": False,
         "enableAltEsc": False,
         "enableAltTab": False,
@@ -66,14 +72,23 @@ def get_default_hackerrank_config() -> dict:
         "enablePrintScreen": False,
         "hookKeys": True,
         
-        # Clipboard & Session Policies
-        "enablePrivateClipboard": True,  # Isolates copy/paste strictly inside SEB
-        "examSessionClearCookiesOnStart": True,  # Forces fresh login at start
+        # Media & Proctoring (HackerRank tests often require camera/microphone checks)
+        "allowVideoCapture": True,
+        "allowAudioCapture": True,
+        "mediaAutoplayAllowed": True,
+        
+        # Clipboard & Storage Policies
+        "enablePrivateClipboard": False,  # Prevents clipboard deadlocks with Monaco/Ace editor
+        "removeLocalStorage": False,  # Preserves candidate code drafts between problems
+        "examSessionClearCookiesOnStart": False,  # Prevents login redirect loops
         "examSessionClearCookiesOnEnd": True,
         
-        # Header Keys
-        "sendBrowserExamKey": True,
-        "browserURLSalt": True,
+        # Header Keys & Network Filtering
+        # Disabled: HackerRank does NOT use Browser Exam Keys.
+        # Computing SHA-256 HMAC on every SPA fetch/XHR/WebSocket request stalls the CEF network thread.
+        "sendBrowserExamKey": False,
+        "browserURLSalt": False,
+        "enableURLFilter": False,
     }
 
 
@@ -165,6 +180,12 @@ def create_seb_config(
     config["allowQuit"] = True
     config["ignoreExitKeys"] = False
     config["sebConfigPurpose"] = 0
+    config["sendBrowserExamKey"] = False
+    config["browserURLSalt"] = False
+    if config.get("newBrowserWindowByLinkPolicy") == 2:
+        config["newBrowserWindowByLinkPolicy"] = 1
+    if config.get("newBrowserWindowByScriptPolicy") == 2:
+        config["newBrowserWindowByScriptPolicy"] = 1
 
     seb_Binary = pack_seb_bytes(config, entry_password=entry_password)
     output_path.write_bytes(seb_Binary)

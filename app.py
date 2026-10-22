@@ -67,6 +67,12 @@ def generate():
         config["allowQuit"] = True
         config["ignoreExitKeys"] = False
         config["sebConfigPurpose"] = 0
+        config["sendBrowserExamKey"] = False
+        config["browserURLSalt"] = False
+        if config.get("newBrowserWindowByLinkPolicy") == 2:
+            config["newBrowserWindowByLinkPolicy"] = 1
+        if config.get("newBrowserWindowByScriptPolicy") == 2:
+            config["newBrowserWindowByScriptPolicy"] = 1
 
         seb_bytes = pack_seb_bytes(
             config,
