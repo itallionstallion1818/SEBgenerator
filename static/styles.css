@@ -215,6 +215,62 @@ code {
   box-shadow: 0 0 0 3px rgba(98, 86, 217, 0.1);
 }
 
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-wrapper input {
+  padding-right: 42px !important;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #7d8295;
+  cursor: pointer;
+  transition: color 140ms, background-color 140ms;
+}
+
+.password-toggle:hover {
+  background-color: #f0efff;
+  color: var(--violet);
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 1px;
+}
+
+.password-toggle .eye-icon {
+  width: 17px;
+  height: 17px;
+  pointer-events: none;
+}
+
+.password-toggle .eye-hide {
+  display: none;
+}
+
+.password-toggle[aria-pressed="true"] .eye-show {
+  display: none;
+}
+
+.password-toggle[aria-pressed="true"] .eye-hide {
+  display: block;
+}
+
 .field input[type="file"] {
   width: 100%;
   padding: 9px 10px;

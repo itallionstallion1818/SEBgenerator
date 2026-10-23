@@ -18,6 +18,8 @@ class GeneratorWebAppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"HackerRank contest URL", response.data)
         self.assertIn(b"/static/app.js", response.data)
+        self.assertIn(b'data-target="quit-password"', response.data)
+        self.assertIn(b'class="password-toggle"', response.data)
 
     def test_generates_default_config_and_sanitizes_filename(self):
         response = self.client.post(
