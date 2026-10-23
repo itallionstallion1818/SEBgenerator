@@ -26,6 +26,27 @@ templateInput.addEventListener("change", () => {
   }
 });
 
+document.querySelectorAll(".password-toggle").forEach((toggleButton) => {
+  toggleButton.addEventListener("click", () => {
+    const targetId = toggleButton.dataset.target;
+    const input = document.getElementById(targetId);
+    if (!input) return;
+
+    const isPassword = input.type === "password";
+    input.type = isPassword ? "text" : "password";
+    toggleButton.setAttribute("aria-pressed", isPassword ? "true" : "false");
+    toggleButton.setAttribute(
+      "aria-label",
+      isPassword ? "Hide password" : "Show password"
+    );
+    toggleButton.setAttribute(
+      "title",
+      isPassword ? "Hide password" : "Show password"
+    );
+    input.focus();
+  });
+});
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   hideMessage();
